@@ -1,0 +1,30 @@
+#for claude
+backend-roadmap.md
+CLAUDE.md
+srs.xlsx
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# aws sam
+.aws-sam/
+samconfig.toml
+
+# editor / os
+.vscode/
+.idea/
+.DS_Store
+
