@@ -10,13 +10,6 @@ Parameters:
   JwtSecretKey:
     Type: String
     NoEcho: true
-  KakaoClientId:
-    Type: String
-    Default: ""
-    NoEcho: true
-  KakaoRedirectUri:
-    Type: String
-    Default: ""
 
 Globals:
   Function:
@@ -35,8 +28,6 @@ Resources:
           DATABASE_URL: !Ref DatabaseUrl
           JWT_SECRET_KEY: !Ref JwtSecretKey
           S3_BUCKET_NAME: !Ref PhotoBucket
-          KAKAO_CLIENT_ID: !Ref KakaoClientId
-          KAKAO_REDIRECT_URI: !Ref KakaoRedirectUri
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref PhotoBucket

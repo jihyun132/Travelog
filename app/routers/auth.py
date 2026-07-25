@@ -5,7 +5,6 @@ from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.auth import (
-    KakaoLoginRequest,
     LoginRequest,
     LogoutRequest,
     RefreshRequest,
@@ -14,7 +13,6 @@ from app.schemas.auth import (
 )
 from app.schemas.user import UserResponse
 from app.services import auth_service
-from app.services.kakao_client import KakaoOAuthClient, get_kakao_client
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -52,17 +50,3 @@ def logout(
     current_user: User = Depends(get_current_user),
 ) -> None:
     auth_service.logout(db, current_user, payload.refresh_token)
-
-
-@router.post("/kakao", response_model=TokenResponse)
-def kakao_login(
-    payload: KakaoLoginRequest,
-    db: Session = Depends(get_db),
-    kakao: KakaoOAuthClient = Depends(get_kakao_client),
-) -> TokenResponse:
-    user, access_token, refresh_token = auth_service.kakao_login(db, payload, kakao)
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        user=UserResponse.model_validate(user),
-    )

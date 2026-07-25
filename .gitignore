@@ -2,6 +2,8 @@
 backend-roadmap.md
 CLAUDE.md
 srs.xlsx
+# settings.local.json에 DB 접속 문자열 등이 남을 수 있어 폴더째 제외
+.claude/
 
 # python
 __pycache__/

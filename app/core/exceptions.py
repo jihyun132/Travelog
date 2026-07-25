@@ -41,6 +41,11 @@ class ForbiddenError(AppException):
     code = "FORBIDDEN"
 
 
+class UnprocessableError(AppException):
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    code = "UNPROCESSABLE_ENTITY"
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppException)
     async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:

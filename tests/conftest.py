@@ -32,6 +32,7 @@ command.upgrade(Config("alembic.ini"), "head")
 
 from app.db.session import engine  # noqa: E402
 from app.main import app  # noqa: E402
+from app.services.s3_storage import get_s3_storage  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
@@ -39,8 +40,37 @@ def clean_tables():
     yield
     with engine.begin() as conn:
         conn.execute(
-            text("TRUNCATE TABLE photo_locations, refresh_tokens, users RESTART IDENTITY CASCADE")
+            text(
+                "TRUNCATE TABLE diaries, photos, photo_groups, refresh_tokens, users "
+                "RESTART IDENTITY CASCADE"
+            )
         )
+
+
+class FakeS3Storage:
+    """실제 S3 대신 dict에 바이트를 보관하는 테스트 대역."""
+
+    def __init__(self):
+        self.objects: dict[str, bytes] = {}
+
+    def presign_put(self, key: str, content_type: str) -> str:
+        return f"https://fake-s3.local/{key}?method=put"
+
+    def presign_get(self, key: str) -> str:
+        return f"https://fake-s3.local/{key}?method=get"
+
+    def get_object(self, key: str) -> bytes:
+        if key not in self.objects:
+            raise FileNotFoundError(key)
+        return self.objects[key]
+
+
+@pytest.fixture
+def fake_s3():
+    fake = FakeS3Storage()
+    app.dependency_overrides[get_s3_storage] = lambda: fake
+    yield fake
+    app.dependency_overrides.pop(get_s3_storage, None)
 
 
 @pytest.fixture

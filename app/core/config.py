@@ -15,9 +15,9 @@ class Settings(BaseSettings):
 
     aws_region: str = "ap-northeast-2"
     s3_bucket_name: str = ""
+    s3_presign_expire_seconds: int = 3600
 
-    kakao_client_id: str = ""
-    kakao_redirect_uri: str = ""
+    default_group_radius_m: int = 30
 
 
 @lru_cache

@@ -14,5 +14,5 @@ class UserResponse(BaseModel):
 
 
 class WithdrawRequest(BaseModel):
-    # Kakao 전용 가입자는 비밀번호가 없으므로 생략 가능. 이메일 가입자는 필수 검증.
+    # 소셜 전용 가입자는 비밀번호가 없으므로 생략 가능. 이메일 가입자는 필수 검증.
     password: str | None = None

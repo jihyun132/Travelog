@@ -30,9 +30,3 @@ class RefreshRequest(BaseModel):
 
 class LogoutRequest(BaseModel):
     refresh_token: str
-
-
-class KakaoLoginRequest(BaseModel):
-    code: str
-    # 앱/웹 등 클라이언트별 redirect_uri가 다를 수 있어 요청에서 받는다. 없으면 서버 설정값 사용.
-    redirect_uri: str | None = None

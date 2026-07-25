@@ -16,8 +16,7 @@ from app.core.security import (
 )
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
-from app.schemas.auth import KakaoLoginRequest, LoginRequest, SignupRequest
-from app.services.kakao_client import KakaoOAuthClient
+from app.schemas.auth import LoginRequest, SignupRequest
 
 
 def signup(db: Session, payload: SignupRequest) -> User:
@@ -94,31 +93,3 @@ def logout(db: Session, user: User, refresh_token: str) -> None:
     if stored is not None:
         db.delete(stored)
         db.commit()
-
-
-def kakao_login(
-    db: Session, payload: KakaoLoginRequest, kakao: KakaoOAuthClient
-) -> tuple[User, str, str]:
-    info = kakao.get_user_info(payload.code, payload.redirect_uri)
-
-    user = db.scalar(select(User).where(User.kakao_id == info.kakao_id))
-    if user is None:
-        if info.email is None:
-            raise UnauthorizedError("카카오 계정에서 이메일 제공에 동의해야 로그인할 수 있습니다.")
-        # 같은 이메일로 가입한 기존 계정이 있으면 카카오 계정을 연결한다.
-        user = db.scalar(select(User).where(User.email == info.email))
-        if user is not None:
-            user.kakao_id = info.kakao_id
-        else:
-            user = User(
-                email=info.email,
-                password_hash=None,
-                name=info.nickname or info.email.split("@")[0],
-                kakao_id=info.kakao_id,
-            )
-            db.add(user)
-        db.commit()
-        db.refresh(user)
-
-    access_token, refresh_token = _issue_tokens(db, user)
-    return user, access_token, refresh_token

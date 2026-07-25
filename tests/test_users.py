@@ -1,6 +1,3 @@
-from app.main import app
-from app.services.kakao_client import KakaoUserInfo, get_kakao_client
-
 SIGNUP_PAYLOAD = {
     "email": "withdraw@example.com",
     "password": "password123",
@@ -76,25 +73,3 @@ def test_withdraw_without_auth_returns_401(client):
     res = client.request("DELETE", "/api/v1/users/me", json={"password": "whatever"})
 
     assert res.status_code == 401
-
-
-def test_withdraw_kakao_only_user_without_password(client):
-    app.dependency_overrides[get_kakao_client] = lambda: _FakeKakao(
-        KakaoUserInfo(kakao_id=777, email="kakao-only@example.com", nickname="카카오탈퇴")
-    )
-    try:
-        tokens = client.post("/api/v1/auth/kakao", json={"code": "dummy"}).json()
-    finally:
-        app.dependency_overrides.pop(get_kakao_client, None)
-
-    res = _withdraw(client, tokens["access_token"], password=None)
-
-    assert res.status_code == 204
-
-
-class _FakeKakao:
-    def __init__(self, info):
-        self.info = info
-
-    def get_user_info(self, code, redirect_uri):
-        return self.info
