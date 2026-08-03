@@ -17,7 +17,9 @@ class Settings(BaseSettings):
     s3_bucket_name: str = ""
     s3_presign_expire_seconds: int = 3600
 
-    default_group_radius_m: int = 30
+    # 클라이언트가 업로드 시 사진을 방문지로 묶는 임계값(300m)과 맞춘다.
+    # 값이 다르면 같은 클러스터의 사진이 서버에서 미분류로 떨어진다.
+    default_place_radius_m: int = 300
 
 
 @lru_cache

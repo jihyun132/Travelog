@@ -9,8 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.exceptions import InvalidPhotoError, NotFoundError
 from app.models.photo import Photo, PhotoStatus
 from app.models.user import User
-from app.schemas.photo import PhotoResponse
-from app.services.photo_group_service import find_group_in_radius
+from app.services import place_service
 from app.services.s3_storage import S3Storage
 
 _GPS_IFD = 0x8825
@@ -81,8 +80,15 @@ def get_own_photo(db: Session, user: User, photo_id: int) -> Photo:
     return photo
 
 
-def complete_upload(db: Session, s3: S3Storage, user: User, photo_id: int) -> Photo:
-    """S3 업로드 완료 통보: EXIF 추출 → 좌표 저장 → 반경 내 그룹 자동 배정."""
+def complete_upload(
+    db: Session, s3: S3Storage, user: User, photo_id: int, place_id: int | None = None
+) -> Photo:
+    """S3 업로드 완료 통보: EXIF 추출 → 좌표 저장 → 방문지 배정.
+
+    place_id를 주면 그 방문지로 확정 배정하고, 없으면 반경 내 방문지를 자동으로 찾는다.
+    자동 배정은 사용자의 모든 방문지를 대상으로 하므로, 클라이언트가 이미 사진을
+    방문지로 묶어둔 업로드 플로우에서는 명시 배정이 정확하다.
+    """
     photo = get_own_photo(db, user, photo_id)
     try:
         data = s3.get_object(photo.s3_key)
@@ -97,10 +103,14 @@ def complete_upload(db: Session, s3: S3Storage, user: User, photo_id: int) -> Ph
     photo.taken_at = taken_at
     photo.status = PhotoStatus.COMPLETED
 
-    group = None
-    if latitude is not None and longitude is not None:
-        group = find_group_in_radius(db, user.id, latitude, longitude)
-    photo.group_id = group.id if group else None
+    if place_id is not None:
+        # 남의 방문지에 사진을 밀어넣지 못하도록 소유권을 검증한다.
+        photo.place_id = place_service.get_own_place(db, user, place_id).id
+    else:
+        place = None
+        if latitude is not None and longitude is not None:
+            place = place_service.find_place_in_radius(db, user.id, latitude, longitude)
+        photo.place_id = place.id if place else None
     photo.sort_order = None
 
     db.commit()
@@ -109,23 +119,15 @@ def complete_upload(db: Session, s3: S3Storage, user: User, photo_id: int) -> Ph
 
 
 def list_unassigned(db: Session, user: User) -> list[Photo]:
-    """어느 그룹에도 속하지 않은(미분류) 완료 사진 목록."""
+    """어느 방문지에도 속하지 않은(미분류) 완료 사진 목록."""
     return list(
         db.scalars(
             select(Photo)
             .where(
                 Photo.user_id == user.id,
-                Photo.group_id.is_(None),
+                Photo.place_id.is_(None),
                 Photo.status == PhotoStatus.COMPLETED,
             )
             .order_by(Photo.taken_at.asc().nulls_last(), Photo.id)
         )
     )
-
-
-def to_response(photo: Photo, s3: S3Storage) -> PhotoResponse:
-    """presigned GET URL을 붙인 응답 스키마로 변환한다."""
-    response = PhotoResponse.model_validate(photo)
-    if photo.status == PhotoStatus.COMPLETED:
-        response.url = s3.presign_get(photo.s3_key)
-    return response

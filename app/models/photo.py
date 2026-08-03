@@ -19,9 +19,9 @@ class Photo(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    # null = 미분류. 그룹 삭제 시 서비스에서 미분류로 되돌리며, FK는 백스톱.
-    group_id: Mapped[int | None] = mapped_column(
-        ForeignKey("photo_groups.id", ondelete="SET NULL"), index=True
+    # null = 미분류. 방문지 삭제 시 서비스에서 미분류로 되돌리며, FK는 백스톱.
+    place_id: Mapped[int | None] = mapped_column(
+        ForeignKey("places.id", ondelete="SET NULL"), index=True
     )
     filename: Mapped[str] = mapped_column(String(255))
     s3_key: Mapped[str] = mapped_column(String(512), unique=True)
@@ -30,6 +30,6 @@ class Photo(Base):
     longitude: Mapped[float | None]
     # EXIF 촬영일시는 타임존 정보가 없다 (naive datetime 그대로 저장).
     taken_at: Mapped[datetime | None] = mapped_column(DateTime())
-    # 그룹 내 사용자 지정 순서. null이면 taken_at 폴백 정렬.
+    # 방문지 내 사용자 지정 순서. null이면 taken_at 폴백 정렬.
     sort_order: Mapped[int | None]
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

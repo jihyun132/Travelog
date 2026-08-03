@@ -21,13 +21,24 @@ class PhotoUploadResponse(BaseModel):
     upload_url: str
 
 
+class PhotoCompleteRequest(BaseModel):
+    """업로드 완료 통보. place_id를 주면 반경 자동 배정 대신 그 방문지로 확정 배정한다.
+
+    클라이언트가 이미 사진을 방문지로 묶어둔 경우(업로드 플로우) 필요하다.
+    자동 배정은 사용자의 '모든' 방문지를 대상으로 하므로, 재방문 지역에서는
+    새 여행 사진이 과거 여행의 방문지로 흡수될 수 있다.
+    """
+
+    place_id: int | None = None
+
+
 class PhotoResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     filename: str
     status: str
-    group_id: int | None
+    place_id: int | None
     latitude: float | None
     longitude: float | None
     taken_at: datetime | None

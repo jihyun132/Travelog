@@ -41,7 +41,7 @@ def clean_tables():
     with engine.begin() as conn:
         conn.execute(
             text(
-                "TRUNCATE TABLE diaries, photos, photo_groups, refresh_tokens, users "
+                "TRUNCATE TABLE diaries, photos, places, trips, refresh_tokens, users "
                 "RESTART IDENTITY CASCADE"
             )
         )
@@ -63,6 +63,10 @@ class FakeS3Storage:
         if key not in self.objects:
             raise FileNotFoundError(key)
         return self.objects[key]
+
+    def delete_objects(self, keys: list[str]) -> None:
+        for key in keys:
+            self.objects.pop(key, None)
 
 
 @pytest.fixture

@@ -5,27 +5,27 @@ from app.core.exceptions import NotFoundError
 from app.models.diary import Diary
 from app.models.user import User
 from app.schemas.diary import DiaryUpsert
-from app.services import photo_group_service
+from app.services import place_service
 
 
-def _find_diary(db: Session, group_id: int) -> Diary | None:
-    return db.scalars(select(Diary).where(Diary.group_id == group_id)).first()
+def _find_diary(db: Session, place_id: int) -> Diary | None:
+    return db.scalars(select(Diary).where(Diary.place_id == place_id)).first()
 
 
-def get_diary(db: Session, user: User, group_id: int) -> Diary:
-    photo_group_service.get_own_group(db, user, group_id)
-    diary = _find_diary(db, group_id)
+def get_diary(db: Session, user: User, place_id: int) -> Diary:
+    place_service.get_own_place(db, user, place_id)
+    diary = _find_diary(db, place_id)
     if diary is None:
         raise NotFoundError("일기를 찾을 수 없습니다.")
     return diary
 
 
-def upsert_diary(db: Session, user: User, group_id: int, payload: DiaryUpsert) -> Diary:
-    """일기가 없으면 생성, 있으면 내용·날씨를 덮어쓴다 (그룹당 1개)."""
-    group = photo_group_service.get_own_group(db, user, group_id)
-    diary = _find_diary(db, group.id)
+def upsert_diary(db: Session, user: User, place_id: int, payload: DiaryUpsert) -> Diary:
+    """일기가 없으면 생성, 있으면 내용·날씨를 덮어쓴다 (방문지당 1개)."""
+    place = place_service.get_own_place(db, user, place_id)
+    diary = _find_diary(db, place.id)
     if diary is None:
-        diary = Diary(user_id=user.id, group_id=group.id, **payload.model_dump())
+        diary = Diary(user_id=user.id, place_id=place.id, **payload.model_dump())
         db.add(diary)
     else:
         diary.content = payload.content
@@ -35,7 +35,7 @@ def upsert_diary(db: Session, user: User, group_id: int, payload: DiaryUpsert) -
     return diary
 
 
-def delete_diary(db: Session, user: User, group_id: int) -> None:
-    diary = get_diary(db, user, group_id)
+def delete_diary(db: Session, user: User, place_id: int) -> None:
+    diary = get_diary(db, user, place_id)
     db.delete(diary)
     db.commit()

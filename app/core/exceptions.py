@@ -58,9 +58,17 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def validation_exception_handler(
         request: Request, exc: RequestValidationError
     ) -> JSONResponse:
+        # 어떤 필드가 걸렸는지 메시지에 담는다. 없으면 원인 파악에 스키마를 직접 봐야 한다.
+        fields = [
+            ".".join(str(part) for part in error["loc"][1:]) or "body" for error in exc.errors()
+        ]
+        detail = f" ({', '.join(dict.fromkeys(fields))})" if fields else ""
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            content={"code": "VALIDATION_ERROR", "message": "요청 형식이 올바르지 않습니다."},
+            content={
+                "code": "VALIDATION_ERROR",
+                "message": f"요청 형식이 올바르지 않습니다.{detail}",
+            },
         )
 
     @app.exception_handler(Exception)

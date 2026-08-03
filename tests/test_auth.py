@@ -143,3 +143,30 @@ def test_logout_without_token_returns_401(client):
     res = client.post("/api/v1/auth/logout", json={"refresh_token": "anything"})
 
     assert res.status_code == 401
+
+
+# ── 아이디(이메일) 찾기 ──────────────────────────────────
+
+
+def test_find_email_returns_masked_email(client):
+    signup(client)
+
+    res = client.post(
+        "/api/v1/auth/find-email",
+        json={"name": SIGNUP_PAYLOAD["name"], "birth_date": SIGNUP_PAYLOAD["birth_date"]},
+    )
+
+    assert res.status_code == 200
+    # traveler@example.com → tr******@example.com
+    assert res.json()["email"] == "tr******@example.com"
+
+
+def test_find_email_with_wrong_birth_date_returns_404(client):
+    signup(client)
+
+    res = client.post(
+        "/api/v1/auth/find-email",
+        json={"name": SIGNUP_PAYLOAD["name"], "birth_date": "2000-01-01"},
+    )
+
+    assert res.status_code == 404

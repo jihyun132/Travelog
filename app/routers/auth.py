@@ -5,6 +5,8 @@ from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.auth import (
+    FindEmailRequest,
+    FindEmailResponse,
     LoginRequest,
     LogoutRequest,
     RefreshRequest,
@@ -31,6 +33,12 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse
         refresh_token=refresh_token,
         user=UserResponse.model_validate(user),
     )
+
+
+@router.post("/find-email", response_model=FindEmailResponse)
+def find_email(payload: FindEmailRequest, db: Session = Depends(get_db)) -> FindEmailResponse:
+    """SRS 0.2.5 - 아이디(이메일) 찾기. 이름 + 생년월일이 일치해야 한다."""
+    return FindEmailResponse(email=auth_service.find_email(db, payload.name, payload.birth_date))
 
 
 @router.post("/refresh", response_model=TokenResponse)

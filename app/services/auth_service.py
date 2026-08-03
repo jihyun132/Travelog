@@ -1,11 +1,11 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 from jose import JWTError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.core.exceptions import ConflictError, UnauthorizedError
+from app.core.exceptions import ConflictError, NotFoundError, UnauthorizedError
 from app.core.security import (
     TOKEN_TYPE_REFRESH,
     create_access_token,
@@ -34,6 +34,21 @@ def signup(db: Session, payload: SignupRequest) -> User:
     db.commit()
     db.refresh(user)
     return user
+
+
+def _mask_email(email: str) -> str:
+    """앞 2자만 남기고 가린다: traveler@x.com → tr******@x.com"""
+    local, _, domain = email.partition("@")
+    visible = local[:2]
+    return f"{visible}{'*' * max(len(local) - len(visible), 1)}@{domain}"
+
+
+def find_email(db: Session, name: str, birth_date: date) -> str:
+    """SRS 0.2.5 - 이름 + 생년월일로 가입 이메일을 찾아 마스킹해 반환한다."""
+    user = db.scalar(select(User).where(User.name == name.strip(), User.birth_date == birth_date))
+    if user is None:
+        raise NotFoundError("일치하는 계정을 찾을 수 없습니다.")
+    return _mask_email(user.email)
 
 
 def _issue_tokens(db: Session, user: User) -> tuple[str, str]:
